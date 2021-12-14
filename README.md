@@ -1,4 +1,4 @@
-# aws-s3
+# aws-s3-delphi
 Exemplo de acesso ao s3 da amazon utilizando delphi.
 
 <b>Informações do Projeto</b>
