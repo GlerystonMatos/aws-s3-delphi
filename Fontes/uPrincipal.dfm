@@ -4,8 +4,8 @@ object frmPrincipal: TfrmPrincipal
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'AWS - S3'
-  ClientHeight = 620
-  ClientWidth = 517
+  ClientHeight = 365
+  ClientWidth = 770
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,70 +17,70 @@ object frmPrincipal: TfrmPrincipal
   PixelsPerInch = 96
   TextHeight = 13
   object lbStorageEndpoint: TLabel
-    Left = 8
-    Top = 136
+    Left = 390
+    Top = 117
     Width = 87
     Height = 13
     Caption = 'Storage Endpoint:'
   end
-  object btnLoad: TSpeedButton
-    Left = 390
-    Top = 77
+  object btnUpload: TSpeedButton
+    Left = 517
+    Top = 5
     Width = 121
     Height = 32
     Caption = 'Upload'
-    OnClick = btnLoadClick
+    OnClick = btnUploadClick
   end
-  object btndownload: TSpeedButton
-    Left = 390
-    Top = 112
+  object btnDownload: TSpeedButton
+    Left = 517
+    Top = 41
     Width = 121
     Height = 32
     Caption = 'Download'
-    OnClick = btndownloadClick
+    OnClick = btnDownloadClick
   end
-  object btnexcluir: TSpeedButton
-    Left = 390
-    Top = 147
+  object btnExcluir: TSpeedButton
+    Left = 517
+    Top = 79
     Width = 121
     Height = 32
     Caption = 'Excluir'
-    OnClick = btnexcluirClick
+    OnClick = btnExcluirClick
   end
-  object btnbuckets: TSpeedButton
+  object btnListarBuckets: TSpeedButton
     Left = 390
-    Top = 184
+    Top = 79
     Width = 121
     Height = 32
     Caption = 'Listar Buckets'
-    OnClick = btnbucketsClick
+    OnClick = btnListarBucketsClick
   end
-  object btnArquivos: TSpeedButton
-    Left = 390
-    Top = 222
+  object btnListarArquivos: TSpeedButton
+    Left = 643
+    Top = 5
     Width = 121
     Height = 32
     Caption = 'Listar Arquivos'
-    OnClick = btnArquivosClick
+    OnClick = btnListarArquivosClick
   end
-  object btnBucket: TSpeedButton
+  object btnCriarBucket: TSpeedButton
     Left = 390
     Top = 41
     Width = 121
     Height = 32
     Caption = 'Criar Bucket'
-    OnClick = btnBucketClick
+    OnClick = btnCriarBucketClick
   end
   object lbAccesKey: TLabel
     Left = 8
-    Top = 8
+    Top = 11
     Width = 52
     Height = 13
     Caption = 'Acces key:'
   end
   object lbSecretKey: TLabel
     Left = 8
-    Top = 35
+    Top = 38
     Width = 56
     Height = 13
     Caption = 'Secret Key:'
@@ -95,65 +95,66 @@ object frmPrincipal: TfrmPrincipal
   end
   object lbBucket: TLabel
     Left = 8
-    Top = 60
+    Top = 63
     Width = 36
     Height = 13
     Caption = 'Bucket:'
   end
   object lbFolder: TLabel
     Left = 8
-    Top = 85
+    Top = 88
     Width = 34
     Height = 13
     Caption = 'Folder:'
   end
   object lbFolderList: TLabel
     Left = 8
-    Top = 110
+    Top = 113
     Width = 53
     Height = 13
     Caption = 'Folder List:'
   end
   object lbBuckets: TLabel
     Left = 8
-    Top = 158
+    Top = 140
     Width = 41
     Height = 13
     Caption = 'Buckets:'
   end
   object lbArquivos: TLabel
-    Left = 199
-    Top = 158
+    Left = 388
+    Top = 140
     Width = 46
     Height = 13
     Caption = 'Arquivos:'
   end
-  object lstlistabuckts: TListBox
+  object lstListaBuckets: TListBox
     Left = 8
-    Top = 177
-    Width = 185
-    Height = 436
+    Top = 159
+    Width = 375
+    Height = 200
     ItemHeight = 13
     TabOrder = 4
   end
   object lstListaArquivos: TListBox
-    Left = 199
-    Top = 177
-    Width = 185
-    Height = 436
+    Left = 388
+    Top = 159
+    Width = 375
+    Height = 200
     ItemHeight = 13
     TabOrder = 5
   end
-  object edtBucket: TEdit
+  object detBucket: TEdit
     Left = 48
-    Top = 57
+    Top = 60
     Width = 336
     Height = 21
     TabOrder = 2
+    Text = 'NOME DO BUCKET PARA SER CRIADO'
   end
-  object edtAccesKey: TEdit
+  object detAccesKey: TEdit
     Left = 64
-    Top = 5
+    Top = 8
     Width = 320
     Height = 21
     TabOrder = 0
@@ -161,7 +162,7 @@ object frmPrincipal: TfrmPrincipal
   end
   object detSecretkey: TEdit
     Left = 67
-    Top = 32
+    Top = 35
     Width = 317
     Height = 21
     TabOrder = 1
@@ -169,27 +170,30 @@ object frmPrincipal: TfrmPrincipal
   end
   object detFolder: TEdit
     Left = 48
-    Top = 82
+    Top = 85
     Width = 336
     Height = 21
     TabOrder = 3
+    Text = 'PASTA PARA ARMAZENAR OS ARQUIVOS ENVIADOS'
   end
   object detFolderList: TEdit
     Left = 65
-    Top = 107
+    Top = 110
     Width = 319
     Height = 21
     TabOrder = 6
+    Text = 'NOME DA PASTA PARA FILTRAR A CONSULTA'
   end
   object amcAmazon: TAmazonConnectionInfo
     TableEndpoint = 'sdb.amazonaws.com'
     QueueEndpoint = 'queue.amazonaws.com'
     StorageEndpoint = 's3.amazonaws.com'
-    Left = 440
-    Top = 329
+    UseDefaultEndpoints = False
+    Left = 664
+    Top = 49
   end
   object odFile: TOpenDialog
-    Left = 440
-    Top = 377
+    Left = 720
+    Top = 49
   end
 end

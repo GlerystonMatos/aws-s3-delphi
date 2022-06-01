@@ -1,28 +1,29 @@
 unit uPrincipal;
-
+
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.Cloud.CloudAPI, Vcl.FileCtrl,
-  Data.Cloud.AmazonAPI, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.Buttons, IPPeerClient;
+  Winapi.Windows, Vcl.FileCtrl, System.SysUtils, System.Variants, System.Classes,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.Cloud.CloudAPI, StrUtils,
+  Data.Cloud.AmazonAPI, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.Buttons, IPPeerClient,
+  System.UITypes;
 
 type
   TfrmPrincipal = class(TForm)
     amcAmazon: TAmazonConnectionInfo;
     lbStorageEndpoint: TLabel;
-    btnLoad: TSpeedButton;
-    btndownload: TSpeedButton;
-    btnexcluir: TSpeedButton;
-    btnbuckets: TSpeedButton;
-    btnArquivos: TSpeedButton;
-    lstlistabuckts: TListBox;
+    btnUpload: TSpeedButton;
+    btnDownload: TSpeedButton;
+    btnExcluir: TSpeedButton;
+    btnListarBuckets: TSpeedButton;
+    btnListarArquivos: TSpeedButton;
+    lstListaBuckets: TListBox;
     lstListaArquivos: TListBox;
-    edtBucket: TEdit;
-    btnBucket: TSpeedButton;
+    detBucket: TEdit;
+    btnCriarBucket: TSpeedButton;
     odFile: TOpenDialog;
     lbAccesKey: TLabel;
-    edtAccesKey: TEdit;
+    detAccesKey: TEdit;
     lbSecretKey: TLabel;
     detSecretkey: TEdit;
     btnConectar: TSpeedButton;
@@ -33,16 +34,21 @@ type
     detFolderList: TEdit;
     lbBuckets: TLabel;
     lbArquivos: TLabel;
-    procedure btnbucketsClick(Sender: TObject);
-    procedure btnArquivosClick(Sender: TObject);
-    procedure btnLoadClick(Sender: TObject);
-    procedure btndownloadClick(Sender: TObject);
-    procedure btnexcluirClick(Sender: TObject);
-    procedure btnBucketClick(Sender: TObject);
     procedure btnConectarClick(Sender: TObject);
+    procedure btnCriarBucketClick(Sender: TObject);
+    procedure btnUploadClick(Sender: TObject);
+    procedure btnDownloadClick(Sender: TObject);
+    procedure btnExcluirClick(Sender: TObject);
+    procedure btnListarBucketsClick(Sender: TObject);
+    procedure btnListarArquivosClick(Sender: TObject);
   private
-    { Private declarations }
-    amazonStorageService: TAmazonStorageService;
+    FAmazonStorageService: TAmazonStorageService;
+    procedure LoadMetaData(var metaData: TStringList);
+    procedure LoadHeaders(var headers: TStringList);
+    procedure MensagemSucesso;
+    procedure MensagemErro;
+    function GetObjectName: string;
+    function GetBytesFile: TBytes;
   public
     { Public declarations }
   end;
@@ -54,168 +60,218 @@ implementation
 
 {$R *.dfm}
 
-procedure TfrmPrincipal.btnBucketClick(Sender: TObject);
+procedure TfrmPrincipal.MensagemSucesso;
 begin
-  amazonStorageService.CreateBucket(edtBucket.Text, TAmazonACLType.amzbaPrivate, TAmazonRegion.amzrUSWest1, nil);
   MessageDlg('Operação executada com sucesso.', mtInformation, [mbOK], 0);
 end;
 
-procedure TfrmPrincipal.btnArquivosClick(Sender: TObject);
-var
-  strBuckt: string;
-  bucktInfo: TAmazonBucketResult;
-  objInfo: TAmazonObjectResult;
+procedure TfrmPrincipal.MensagemErro;
 begin
-  strBuckt := lstlistabuckts.Items[lstlistabuckts.ItemIndex];
-  bucktInfo := amazonStorageService.GetBucket(strBuckt, nil);
-  lstListaArquivos.Items.Clear;
-  for objInfo in bucktInfo.Objects do
+  MessageDlg('Erro ao executar a operação.', mtError, [mbOK], 0);
+end;
+
+procedure TfrmPrincipal.btnConectarClick(Sender: TObject);
+begin
+  amcAmazon.AccountName := Trim(detAccesKey.Text);
+  amcAmazon.AccountKey := Trim(detSecretkey.Text);
+
+  FAmazonStorageService := TAmazonStorageService.Create(amcAmazon);
+
+  lbStorageEndpoint.Caption := 'Storage Endpoint: ' + amcAmazon.StorageEndpoint;
+  MensagemSucesso;
+end;
+
+procedure TfrmPrincipal.btnCriarBucketClick(Sender: TObject);
+begin
+  FAmazonStorageService.CreateBucket(detBucket.Text, TAmazonACLType.amzbaPrivate, amzrUSEast1, nil);
+  MensagemSucesso;
+end;
+
+procedure TfrmPrincipal.btnUploadClick(Sender: TObject);
+var
+  content: TBytes;
+  bucketName: string;
+  objectName: string;
+  acl: TAmazonACLType;
+  headers: TStringList;
+  metaData: TStringList;
+  reducedRedundancy: Boolean;
+begin
+  if (odFile.Execute) then
   begin
-    if (Trim(detFolderList.text) <> '') then
-    begin
-      if (Pos(Trim(detFolderList.text), objInfo.Name) > 0) then
-      begin
-        lstListaArquivos.Items.Add(objInfo.Name);
+    try
+      objectName := GetObjectName;
+      content := GetBytesFile;
+      try
+        metaData := TStringList.Create;
+        try
+          LoadMetaData(metaData);
+          headers := TStringList.Create;
+          try
+            LoadHeaders(headers);
+            try
+              acl := amzbaPublicRead;
+              reducedRedundancy := False;
+              Screen.Cursor := crHourGlass;
+              bucketName := lstListaBuckets.Items[lstListaBuckets.ItemIndex];
+
+              FAmazonStorageService.UploadObject(bucketName, objectName, content, reducedRedundancy, metaData, headers, acl);
+              MensagemSucesso;
+            except
+              on e: Exception do
+                ShowMessage(e.Message);
+            end;
+          finally
+            headers.Free;
+          end;
+        finally
+          metaData.Free;
+        end;
+      except
+        on e: Exception do
+          MensagemErro;
       end;
-    end
-    else
-    begin
-      lstListaArquivos.Items.Add(objInfo.Name);
+    finally
+      Screen.Cursor := crDefault;
     end;
   end;
 end;
 
-procedure TfrmPrincipal.btnbucketsClick(Sender: TObject);
+function TfrmPrincipal.GetObjectName: string;
 var
-  respInfo: TCloudResponseInfo;
-  list: TStrings;
-  contador: Integer;
+  objectName: string;
 begin
-  respInfo := TCloudResponseInfo.Create;
-  try
-    list := amazonStorageService.ListBuckets(respInfo);
-    lstlistabuckts.Items.Clear;
+  objectName := ExtractFileName(odFile.FileName);
 
-    if (Assigned(list)) then
-    begin
-      for contador := 0 to Pred(list.Count) do
-      begin
-        lstlistabuckts.Items.Add(list.Names[contador]);
-      end;
-    end;
+  if (Trim(detFolder.Text) <> '') then
+    objectName := Trim(detFolder.Text) + objectName;
+  Result := objectName;
+end;
+
+function TfrmPrincipal.GetBytesFile: TBytes;
+var
+  reader: TBinaryReader;
+begin
+  reader := TBinaryReader.Create(odFile.FileName);
+  try
+    Result := reader.ReadBytes(reader.BaseStream.Size);
   finally
-    respInfo.Free;
-    list.Free;
+    reader.Free;
   end;
 end;
 
-procedure TfrmPrincipal.btndownloadClick(Sender: TObject);
-var
-  fStream: TStream;
-  sDir, sFile: string;
+procedure TfrmPrincipal.LoadMetaData(var metaData: TStringList);
 begin
-  fStream := TMemoryStream.Create;
+  metaData.Add('File-Name=' + ExtractFileName(odFile.FileName));
+end;
+
+procedure TfrmPrincipal.LoadHeaders(var headers: TStringList);
+const
+  fileTipe: Array of String = ['.jpg','.png','.pdf','.xml','.zip'];
+begin
+  case (AnsiIndexStr(ExtractFileExt(odFile.FileName), fileTipe)) of
+    0 : headers.Add('Content-Type=image/jpeg');
+    1 : headers.Add('Content-Type=image/png');
+    2 : headers.Add('Content-Type=application/pdf');
+    3 : headers.Add('Content-Type=application/xml');
+    4 : headers.Add('Content-Type=application/zip');
+  end;
+end;
+
+procedure TfrmPrincipal.btnDownloadClick(Sender: TObject);
+var
+  stream: TStream;
+  FileName: string;
+  directory: string;
+begin
+  stream := TMemoryStream.Create;
   try
-    sFile := lstListaArquivos.Items[lstListaArquivos.ItemIndex];
     Screen.Cursor := crHourGlass;
-    amazonStorageService.GetObject(lstlistabuckts.Items[lstlistabuckts.ItemIndex], sFile, fStream);
-    fStream.Position := 0;
+    FileName := lstListaArquivos.Items[lstListaArquivos.ItemIndex];
+    FAmazonStorageService.GetObject(lstListaBuckets.Items[lstListaBuckets.ItemIndex], FileName, stream);
+    stream.Position := 0;
 
-    sDir := ExtractFilePath(ParamStr(0));
-
-    if selectDirectory('Selecione a pasta', 'C:\', sDir) then
+    directory := ExtractFilePath(ParamStr(0));
+    if (selectDirectory('Selecione a pasta', 'C:\', directory)) then
     begin
-      if (not DirectoryExists(ExtractFilePath(sDir + PathDelim + StringReplace(sFile, '/', '\', [rfReplaceAll])))) then
-        ForceDirectories(ExtractFilePath(sDir + PathDelim + StringReplace(sFile, '/', '\', [rfReplaceAll])));
+      if (not DirectoryExists(ExtractFilePath(directory + PathDelim + StringReplace(FileName, '/', '\',
+        [rfReplaceAll])))) then
+        ForceDirectories(ExtractFilePath(directory + PathDelim + StringReplace(FileName, '/', '\', [rfReplaceAll])));
 
-      TMemoryStream(fStream).SaveToFile(sDir + PathDelim + sFile);
-      MessageDlg('Arquivo salvo com sucesso.', mtInformation, [mbOK], 0);
+      TMemoryStream(stream).SaveToFile(directory + PathDelim + FileName);
+      MensagemSucesso;
     end;
-
   finally
-    fStream.Free;
+    stream.Free;
     Screen.Cursor := crDefault;
   end;
 end;
 
-procedure TfrmPrincipal.btnexcluirClick(Sender: TObject);
+procedure TfrmPrincipal.btnExcluirClick(Sender: TObject);
 var
-  sfile: string;
+  FileName: string;
 begin
-  sfile := lstListaArquivos.Items[lstListaArquivos.ItemIndex];
+  FileName := lstListaArquivos.Items[lstListaArquivos.ItemIndex];
   if (MessageDlg('Deseja realmente excluir este arquivo?', mtConfirmation, [mbYes, mbNo], 0) = mrYes) then
   begin
     try
       try
         Screen.Cursor := crHourGlass;
-        amazonStorageService.DeleteObject(lstlistabuckts.Items[lstlistabuckts.ItemIndex], sfile);
-        MessageDlg('Operação executada com sucesso.', mtInformation, [mbOK], 0);
+        FAmazonStorageService.DeleteObject(lstListaBuckets.Items[lstListaBuckets.ItemIndex], FileName);
+        MensagemSucesso;
       finally
         Screen.Cursor := crDefault;
       end;
     except
-      MessageDlg('Erro ao excluir o arquivo.', mtError, [mbOK], 0);
+      MensagemErro;
     end;
   end;
 end;
 
-procedure TfrmPrincipal.btnLoadClick(Sender: TObject);
+procedure TfrmPrincipal.btnListarBucketsClick(Sender: TObject);
 var
-  sFile: string;
-  fContents: TBytes;
-  fReader: TBinaryReader;
-  sMeta: TStringList;
+  list: TStrings;
+  contador: Integer;
+  respInfo: TCloudResponseInfo;
 begin
-  if (odFile.Execute) then
-  begin
-    sFile := ExtractFileName(odFile.FileName);
-    fReader := TBinaryReader.Create(odFile.FileName);
-
-    if (Trim(detFolder.Text) <> '') then
-      sFile := Trim(detFolder.Text) + sFile;
-
+  respInfo := TCloudResponseInfo.Create;
+  try
+    list := FAmazonStorageService.ListBuckets(respInfo);
     try
-      fContents := fReader.ReadBytes(fReader.BaseStream.Size);
-    finally
-      fReader.Free;
-    end;
-
-    try
-      try
-        sMeta := TStringList.Create;
-        sMeta.Add('Content-type=*.jpg');
-        Screen.Cursor := crHourGlass;
-        try
-          amazonStorageService.UploadObject(lstlistabuckts.Items[lstlistabuckts.ItemIndex], sFile, fContents, False, sMeta);
-          MessageDlg('Operação executada com sucesso.', mtInformation, [mbOK], 0);
-        except
-          on e: Exception do
-          begin
-            ShowMessage(e.Message);
-          end;
-        end;
-      finally
-        Screen.Cursor := crDefault;
-        sMeta.Free;
-      end;
-    except
-      on e: exception do
+      lstListaBuckets.Items.Clear;
+      if (Assigned(list)) then
       begin
-        Screen.Cursor := crDefault;
-        MessageDlg('Erro ao executar o upload.', mtError, [mbOK], 0);
+        for contador := 0 to Pred(list.Count) do
+          lstListaBuckets.Items.Add(list.Names[contador]);
       end;
+    finally
+      list.Free;
     end;
+  finally
+    respInfo.Free;
   end;
 end;
 
-procedure TfrmPrincipal.btnConectarClick(Sender: TObject);
+procedure TfrmPrincipal.btnListarArquivosClick(Sender: TObject);
+var
+  strBuckt: string;
+  objInfo: TAmazonObjectResult;
+  bucktInfo: TAmazonBucketResult;
 begin
-  amcAmazon.AccountName := Trim(edtAccesKey.Text);
-  amcAmazon.AccountKey := Trim(detSecretkey.Text);
+  strBuckt := lstListaBuckets.Items[lstListaBuckets.ItemIndex];
+  bucktInfo := FAmazonStorageService.GetBucket(strBuckt, nil);
 
-  amazonStorageService := TAmazonStorageService.Create(amcAmazon);
-  lbStorageEndpoint.Caption := 'Storage Endpoint: ' + amcAmazon.StorageEndpoint;
-  MessageDlg('Operação executada com sucesso.', mtInformation, [mbOK], 0);
+  lstListaArquivos.Items.Clear;
+  for objInfo in bucktInfo.Objects do
+  begin
+    if (Trim(detFolderList.Text) <> '') then
+    begin
+      if (Pos(Trim(detFolderList.Text), objInfo.Name) > 0) then
+        lstListaArquivos.Items.Add(objInfo.Name);
+    end
+    else
+      lstListaArquivos.Items.Add(objInfo.Name);
+  end;
 end;
 
 end.

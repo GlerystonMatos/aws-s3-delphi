@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{077AE1A3-31E8-46C1-96F6-47C22E14B4BA}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="AwsS3.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="AwsS3">
+        <MSBuild Projects="AwsS3.dproj"/>
+    </Target>
+    <Target Name="AwsS3:Clean">
+        <MSBuild Projects="AwsS3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="AwsS3:Make">
+        <MSBuild Projects="AwsS3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="AwsS3"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="AwsS3:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="AwsS3:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
